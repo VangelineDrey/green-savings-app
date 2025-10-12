@@ -2,23 +2,32 @@ class Budget {
   final int? id;
   final String category;
   final double limitAmount;
+  final String month;
 
-  Budget({this.id, required this.category, required this.limitAmount});
+  Budget({
+    this.id,
+    required this.category,
+    required this.limitAmount,
+    required this.month,
+  });
 
   Map<String, dynamic> toMap() {
-    final map = <String, dynamic>{
+    return {
+      'id': id,
       'category': category,
       'limitAmount': limitAmount,
+      'month': month,
     };
-    if (id != null) map['id'] = id;
-    return map;
   }
 
   factory Budget.fromMap(Map<String, dynamic> map) {
     return Budget(
-      id: map['id'] is int ? map['id'] as int : int.tryParse(map['id'].toString()),
-      category: map['category'] as String,
-      limitAmount: (map['limitAmount'] as num).toDouble(),
+      id: map['id'],
+      category: map['category'],
+      limitAmount: map['limitAmount'] is int
+          ? (map['limitAmount'] as int).toDouble()
+          : map['limitAmount'],
+      month: map['month'],
     );
   }
 }

@@ -15,27 +15,48 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   Future<void> loadAll() async {
+    print('🔄 [TransactionProvider] loadAll() start');
     _loading = true;
     notifyListeners();
 
-    _items = await _db.getAllTransactions();
+    try {
+      _items = await _db.getAllTransactions();
+      print('✅ [TransactionProvider] loaded ${_items.length} transactions');
+    } catch (e, st) {
+      print('❌ [TransactionProvider] error in loadAll: $e');
+      print(st);
+      _items = [];
+    }
 
     _loading = false;
     notifyListeners();
+    print('🔵 [TransactionProvider] loadAll() finished');
   }
 
   Future<void> addTransaction(TransactionModel t) async {
-    await _db.insertTransaction(t);
-    await loadAll();
+    try {
+      await _db.insertTransaction(t);
+      await loadAll();
+    } catch (e) {
+      print('❌ addTransaction error: $e');
+    }
   }
 
   Future<void> updateTransaction(TransactionModel t) async {
-    await _db.updateTransaction(t);
-    await loadAll();
+    try {
+      await _db.updateTransaction(t);
+      await loadAll();
+    } catch (e) {
+      print('❌ updateTransaction error: $e');
+    }
   }
 
   Future<void> removeTransaction(int id) async {
-    await _db.deleteTransaction(id);
-    await loadAll();
+    try {
+      await _db.deleteTransaction(id);
+      await loadAll();
+    } catch (e) {
+      print('❌ removeTransaction error: $e');
+    }
   }
 }

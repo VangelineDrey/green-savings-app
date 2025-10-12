@@ -1,14 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../data/db_helper.dart';
 import '../models/budget.dart';
 
 class BudgetProvider with ChangeNotifier {
-  final DbHelper dbHelper = DbHelper(); // gunakan DbHelper, bukan DatabaseHelper
-
+  final DbHelper dbHelper = DbHelper();
   List<Budget> _budgets = [];
-  List<Budget> get budgets => _budgets;
-
   bool _loading = true;
+
+  List<Budget> get budgets => _budgets;
   bool get loading => _loading;
 
   BudgetProvider() {
@@ -18,7 +17,6 @@ class BudgetProvider with ChangeNotifier {
   Future<void> loadBudgets() async {
     _loading = true;
     notifyListeners();
-
     _budgets = await dbHelper.getBudgets();
     _loading = false;
     notifyListeners();

@@ -31,23 +31,21 @@ class PiggyBottomNavBar extends StatelessWidget {
       ),
       child: Stack(
         alignment: Alignment.center,
-        clipBehavior: Clip.none, // penting biar tombol bisa keluar area
+        clipBehavior: Clip.none,
         children: [
-          // Row untuk icon kiri dan kanan
           Positioned.fill(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(1, Icons.home_outlined, Icons.home, 'Home'),
-                const SizedBox(width: 60), // Ruang untuk tombol tengah
+                const SizedBox(width: 60),
                 _buildNavItem(2, Icons.bar_chart_outlined, Icons.bar_chart, 'Stats'),
               ],
             ),
           ),
 
-          // Tombol Tengah (+)
           Positioned(
-            bottom: 40, // lebih tinggi dari sebelumnya (20 → 40)
+            bottom: 40,
             child: GestureDetector(
               onTap: () => onTap(0),
               child: Container(

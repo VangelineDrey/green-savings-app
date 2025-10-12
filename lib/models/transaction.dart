@@ -17,7 +17,6 @@ class TransactionModel {
     required this.date,
   });
 
-  // Konversi ke Map untuk database
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -29,7 +28,6 @@ class TransactionModel {
     };
   }
 
-  // Konversi dari Map ke objek
   factory TransactionModel.fromMap(Map<String, dynamic> m) {
     return TransactionModel(
       id: m['id'] as int?,

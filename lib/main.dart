@@ -14,13 +14,13 @@ import 'providers/budget_provider.dart';
 
 void main() {
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => TransactionProvider()),
-        ChangeNotifierProvider(create: (_) => BudgetProvider()),
-      ],
-      child: const PiggyFlowApp(),
-    ),
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => TransactionProvider()),
+          ChangeNotifierProvider(create: (_) => BudgetProvider()),
+        ],
+        child: const PiggyFlowApp(),
+      ),
   );
 }
 
@@ -38,11 +38,9 @@ class PiggyFlowApp extends StatelessWidget {
         fontFamily: 'Montserrat',
         useMaterial3: true,
       ),
-      // halaman awal login
       home: const LoginRegisterScreen(),
       routes: {
         '/main': (context) {
-          // pastikan userData dikirim via Navigator.pushNamed(context, '/main', arguments: userData);
           final userData =
           ModalRoute.of(context)!.settings.arguments as UserData;
           return MainScreen(userData: userData);
@@ -69,8 +67,6 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-
-    // ✅ Sekarang AnalysisScreen bisa akses BudgetProvider & TransactionProvider
     _screens = [
       const Placeholder(),
       HomeScreen(data: widget.userData),

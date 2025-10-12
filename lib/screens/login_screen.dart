@@ -97,21 +97,19 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5E9), // pastel green
+      backgroundColor: const Color(0xFFE8F5E9),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
             child: Column(
               children: [
-                // 🪴 Maskot Leafy
                 Image.asset(
-                  'images/leafy.png', // ubah sesuai path kamu
+                  'images/leafy.png',
                   height: 150,
                 ),
                 const SizedBox(height: 15),
 
-                // 🌱 Judul cantik
                 const Text(
                   "Welcome to",
                   style: TextStyle(
@@ -132,7 +130,6 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
 
                 const SizedBox(height: 30),
 
-                // Tab login & register
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.8),
@@ -165,7 +162,6 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                         child: TabBarView(
                           controller: _tabController,
                           children: [
-                            // 🔹 LOGIN
                             Column(
                               children: [
                                 TextField(
@@ -218,8 +214,6 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                                 ),
                               ],
                             ),
-
-                            // 🔹 REGISTER
                             Column(
                               children: [
                                 TextField(

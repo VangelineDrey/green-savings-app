@@ -4,7 +4,6 @@ import '../app_colors.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
 
-// Dummy kategori
 final List<String> expenseCategories = [
   'Makanan & Minuman',
   'Transportasi',
@@ -92,7 +91,6 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
       date: _selectedDate,
     );
 
-    // ✅ Simpan ke Provider
     final provider = context.read<TransactionProvider>();
     await provider.addTransaction(newTransaction);
 
@@ -119,7 +117,6 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 🔹 Header Judul
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -146,7 +143,6 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
           ),
           const SizedBox(height: 15),
 
-          // 🔹 Input Jumlah
           TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
@@ -161,7 +157,6 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
           ),
           const SizedBox(height: 15),
 
-          // 🔹 Input Deskripsi
           TextField(
             controller: _descController,
             decoration: InputDecoration(
@@ -174,7 +169,6 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
           ),
           const SizedBox(height: 15),
 
-          // 🔹 Pilih Kategori
           Wrap(
             spacing: 8.0,
             children: currentCategories.map((category) {
@@ -201,7 +195,6 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
           ),
           const SizedBox(height: 15),
 
-          // 🔹 Pilih Tanggal
           ListTile(
             title: Text(
                 'Tanggal: ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
@@ -214,7 +207,6 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
           ),
           const SizedBox(height: 20),
 
-          // 🔹 Tombol Simpan
           ElevatedButton(
             onPressed: _saveTransaction,
             style: ElevatedButton.styleFrom(

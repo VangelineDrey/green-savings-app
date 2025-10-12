@@ -4,21 +4,24 @@ import '../models/transaction.dart';
 import '../models/budget.dart';
 
 class DbHelper {
-  // Singleton pattern
   static final DbHelper _instance = DbHelper._internal();
   factory DbHelper() => _instance;
   DbHelper._internal();
 
   static Database? _db;
 
-  // Getter database
   Future<Database> get database async {
     if (_db != null) return _db!;
-    _db = await _initDatabase();
-    return _db!;
+    try {
+      _db = await _initDatabase();
+      return _db!;
+    } catch (e, st) {
+      print('❌ [DbHelper] error opening DB: $e');
+      print(st);
+      rethrow;
+    }
   }
 
-  // Inisialisasi database
   Future<Database> _initDatabase() async {
     final databasesPath = await getDatabasesPath();
     final path = join(databasesPath, 'greensavings.db');
@@ -29,8 +32,8 @@ class DbHelper {
     );
   }
 
-  // Buat tabel awal
   Future<void> _onCreate(Database db, int version) async {
+    //table transactions
     await db.execute('''
       CREATE TABLE transactions(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,13 +45,16 @@ class DbHelper {
       )
     ''');
 
+    //table budgets
     await db.execute('''
       CREATE TABLE budgets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        category TEXT,
-        limitAmount REAL
+        category TEXT NOT NULL,
+        limitAmount REAL NOT NULL,
+        month TEXT NOT NULL
       )
     ''');
+
   }
 
   // ==================== CRUD Transactions ====================
@@ -82,17 +88,17 @@ class DbHelper {
     return maps.map((m) => TransactionModel.fromMap(m)).toList();
   }
 
-  // ==================== CRUD Budget ====================
+  // ==================== CRUD Budgets ====================
   Future<int> insertBudget(Budget budget) async {
     final db = await database;
-    return await db.insert('budgets', budget.toMap());
+    return await db.insert('budgets', budget.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
   Future<List<Budget>> getBudgets() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps =
-    await db.query('budgets', orderBy: 'category ASC');
-    return List.generate(maps.length, (i) => Budget.fromMap(maps[i]));
+    final maps = await db.query('budgets');
+    return maps.map((e) => Budget.fromMap(e)).toList();
   }
 
   Future<int> updateBudget(Budget budget) async {
