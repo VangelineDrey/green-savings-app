@@ -3,6 +3,7 @@ import '../app_colors.dart';
 import 'package:greensavings/main.dart';
 import 'login_screen.dart';
 
+// model untuk menyimpan informasi dasar tentang user
 class UserData {
   final String name;
   final String email;
@@ -15,6 +16,7 @@ class UserData {
   });
 }
 
+//Halaman Login & Register
 class LoginRegisterScreen extends StatefulWidget {
   const LoginRegisterScreen({Key? key}) : super(key: key);
 
@@ -26,6 +28,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  // variabel untuk menyimpan data user yang berhasil registrasi
   UserData? registeredUser;
 
   final _loginEmailController = TextEditingController();
@@ -34,7 +37,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  bool _obscure = true;
+  bool _obscure = true; // mengatur visibilitas password
 
   @override
   void initState() {
@@ -42,6 +45,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
     _tabController = TabController(length: 2, vsync: this);
   }
 
+  // Fungsi untuk registrasi
   void _register() {
     if (_nameController.text.isEmpty ||
         _emailController.text.isEmpty ||
@@ -52,6 +56,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
       return;
     }
 
+    // Simpan data user ke variabel registeredUser
     setState(() {
       registeredUser = UserData(
         name: _nameController.text.trim(),
@@ -60,17 +65,21 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
       );
     });
 
+    // Pesan Berhasil registrasi
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Registrasi berhasil! Silakan login')),
     );
 
+    // langsung pindah ke tab login setelah registrasi
     _tabController.animateTo(0);
   }
 
+  // Fungsi untuk Login
   void _login() {
     final email = _loginEmailController.text.trim();
     final password = _loginPasswordController.text.trim();
 
+    // Pesan yang muncul jika tidak ada user yang terdaftar
     if (registeredUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Belum ada akun terdaftar!')),
@@ -78,12 +87,14 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
       return;
     }
 
+    // Cek kesesuaian email & password
     if (email == registeredUser!.email && password == registeredUser!.password) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => MainScreen(userData: registeredUser!)),
       );
     } else {
+      // Jika tidak cocok maka akan memunculkan error
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Email atau password salah!'),
@@ -142,6 +153,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                       ),
                     ],
                   ),
+
+                  // TAB LOGIN
                   child: Column(
                     children: [
                       const SizedBox(height: 10),
@@ -214,6 +227,8 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
                                 ),
                               ],
                             ),
+
+                            // TAB REGISTER
                             Column(
                               children: [
                                 TextField(

@@ -7,6 +7,7 @@ import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/budget_provider.dart';
 
+// Halaman Analisis & anggaran
 class AnalysisScreen extends StatefulWidget {
   const AnalysisScreen({Key? key}) : super(key: key);
 
@@ -19,12 +20,14 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
+      // Memuat data transaksi dan anggaran saat layar pertama kali ditampilkan
       print('▶️ AnalysisScreen init: calling providers load');
       context.read<TransactionProvider>().loadAll();
       context.read<BudgetProvider>().loadBudgets();
     });
   }
 
+  // Fungsi untuk format angka menjadi format mata uang Rupiah
   String formatCurrency(double amount) {
     final s = amount.toStringAsFixed(0);
     return 'Rp' +
@@ -32,6 +35,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
   }
 
+  // Hitung total pengeluaran per kategori
   Map<String, double> _getExpensesByCategory(List<TransactionModel> items) {
     final Map<String, double> map = {};
     for (var t in items) {
@@ -43,6 +47,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     return map;
   }
 
+  // Hitung Pemasukan & pengeluaran bulanan (4 bulan terakhir)
   List<Map<String, double>> _getMonthlyFlow(List<TransactionModel> items) {
     final Map<String, Map<String, double>> grouped = {};
     for (var t in items) {
@@ -56,6 +61,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       }
     }
 
+    // Mengambil max 4 bulan terakhir untuk ditampilkan
     final sortedKeys = grouped.keys.toList()..sort();
     final keysToUse = sortedKeys.length > 4
         ? sortedKeys.sublist(sortedKeys.length - 4)
@@ -70,11 +76,13 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     return result;
   }
 
+  // Mengatur anggaran bulanan per kategori
   void _showEditBudgetDialog(
       BuildContext context,
       BudgetProvider budgetProvider,
       TransactionProvider transactionProvider,
       ) {
+    // Menampilkan kategori transaksi & kategori yang sudah ada di anggaran
     final transactionCategories = transactionProvider.items
         .where((t) => t.type == TransactionType.expense)
         .map((t) => t.category)
@@ -84,10 +92,12 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     budgetProvider.budgets.map((b) => b.category).toSet();
     final allCategories = {...transactionCategories, ...budgetCategories}.toList();
 
+    // Default kategori & controller input nilai anggaran
     String selectedCategory =
     allCategories.isNotEmpty ? allCategories.first : '';
     final controller = TextEditingController();
 
+    // input anggaran
     showDialog(
       context: context,
       builder: (ctx) {
@@ -130,10 +140,12 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   final value = double.tryParse(text);
 
                   if (value != null && selectedCategory.isNotEmpty) {
+                    // Simpan anggaran berdasarkan bulan saat ini
                     final now = DateTime.now();
                     final currentMonth =
                         '${now.year}-${now.month.toString().padLeft(2, '0')}';
 
+                    // Cek apakah sudah ada anggaran kategori tersebut di bulan ini
                     final existing = budgetProvider.budgets.firstWhere(
                           (b) =>
                       b.category == selectedCategory &&
@@ -146,6 +158,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                       ),
                     );
 
+                    // Jika belum ada data, add new
                     if (existing.id == null) {
                       await budgetProvider.addBudget(
                         Budget(
@@ -155,6 +168,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                         ),
                       );
                     } else {
+                      // Jika sudah ada data, update data
                       final updated = Budget(
                         id: existing.id,
                         category: selectedCategory,
@@ -176,15 +190,18 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 
+  // UI Utama halaman analisis & anggaran
   @override
   Widget build(BuildContext context) {
     final transactionProvider = Provider.of<TransactionProvider>(context);
     final budgetProvider = Provider.of<BudgetProvider>(context);
 
+    // Menampilkan loading jika data belum siap
     if (transactionProvider.loading || budgetProvider.loading) {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // Ambil data transaksi & anggaran
     final transactions = transactionProvider.items;
     final now = DateTime.now();
     final currentMonth = '${now.year}-${now.month.toString().padLeft(2, '0')}';
@@ -206,6 +223,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
           ),
           const SizedBox(height: 20),
 
+          // Header Anggaran Bulan Ini
           Text(
             'Anggaran Bulan Ini (${currentMonth})',
             style: TextStyle(
@@ -216,6 +234,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
           ),
           const SizedBox(height: 10),
 
+          // Jikka belum ada anggaran
           if (budgets.isEmpty)
             Padding(
               padding: const EdgeInsets.all(16),
@@ -225,10 +244,13 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               ),
             )
           else
+            // Tampilkan setiap anggaran dalam bentuk kartu
             ...budgets.map((b) {
               final spent = expensesByCategory[b.category] ?? 0.0;
               final percentage =
               b.limitAmount > 0 ? (spent / b.limitAmount) : 0.0;
+
+              // Warna Progress Bar
               Color barColor;
               if (percentage < 0.5) {
                 barColor = AppColors.incomeGreen;
@@ -238,6 +260,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 barColor = AppColors.expenseRed;
               }
 
+              // Tampilkan kartu untuk setiap anggaran
               return Padding(
                 padding: const EdgeInsets.only(bottom: 15),
                 child: Card(
@@ -258,6 +281,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
+                        // Progress Bar anggaran
                         ClipRRect(
                           borderRadius: BorderRadius.circular(5),
                           child: LinearProgressIndicator(
@@ -300,14 +324,19 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
           ),
 
           const SizedBox(height: 30),
+
+          // Grafik Aliran dana bulanan
           _buildMonthlyFlowChart(monthlyFlow),
           const SizedBox(height: 30),
+
+          // Grafik proporsi pengeluaran
           _buildCategoryExpenseChart(expensesByCategory),
         ],
       ),
     );
   }
 
+  // Bar chart untuk pemasukan & pengeluaran bulanan
   Widget _buildMonthlyFlowChart(List<Map<String, double>> monthlyFlow) {
     if (monthlyFlow.isEmpty) return const Text('Belum ada data aliran dana');
 
@@ -415,6 +444,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 
+  // Sunburst chart untuk pengeluaran per kategori
   Widget _buildCategoryExpenseChart(Map<String, double> expensesByCat) {
     final total = expensesByCat.values.fold(0.0, (a, b) => a + b);
     if (total == 0) return const Text('Belum ada data pengeluaran');

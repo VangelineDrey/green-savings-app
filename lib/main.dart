@@ -14,16 +14,18 @@ import 'providers/budget_provider.dart';
 
 void main() {
   runApp(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => TransactionProvider()),
-          ChangeNotifierProvider(create: (_) => BudgetProvider()),
-        ],
-        child: const PiggyFlowApp(),
-      ),
+    //MultiProvider untuk state management
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider(create: (_) => BudgetProvider()),
+      ],
+      child: const PiggyFlowApp(),
+    ),
   );
 }
 
+// Widget utama aplikasi
 class PiggyFlowApp extends StatelessWidget {
   const PiggyFlowApp({Key? key}) : super(key: key);
 
@@ -38,9 +40,11 @@ class PiggyFlowApp extends StatelessWidget {
         fontFamily: 'Montserrat',
         useMaterial3: true,
       ),
+      // halaman awal login
       home: const LoginRegisterScreen(),
       routes: {
         '/main': (context) {
+          // Mengambil data user yang dikirim lewat Navigator.pushNamed
           final userData =
           ModalRoute.of(context)!.settings.arguments as UserData;
           return MainScreen(userData: userData);
@@ -50,6 +54,7 @@ class PiggyFlowApp extends StatelessWidget {
   }
 }
 
+// Menampilkan homeScreen ketika sudah berhasil login
 class MainScreen extends StatefulWidget {
   final UserData userData;
 
@@ -60,20 +65,23 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 1;
+  int _selectedIndex = 1; //index 1 : default untuk HomeScreen
 
   late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
-    _screens = [
-      const Placeholder(),
+
+    //daftar halaman berdasarkan index
+        _screens = [
+      const Placeholder(), // Tombol tengah untuk input data transaksi
       HomeScreen(data: widget.userData),
-      const AnalysisScreen(),
+      const AnalysisScreen(), // halaman grafik & analisis
     ];
   }
 
+  // Menampilkan pilihan jenis transaksi yang akan dilakukan (pemasukan/pengeluaran)
   void _showTransactionChoice(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -96,6 +104,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+              // mencatat pemasukan
               ListTile(
                 leading: const Icon(Icons.arrow_circle_up,
                     color: AppColors.incomeGreen, size: 30),
@@ -113,6 +122,7 @@ class _MainScreenState extends State<MainScreen> {
                 },
               ),
               const SizedBox(height: 10),
+              // mencatatan pengeluaran
               ListTile(
                 leading: const Icon(Icons.arrow_circle_down,
                     color: AppColors.expenseRed, size: 30),
@@ -136,6 +146,7 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  // form input data transaksi
   void _showTransactionEntry(BuildContext context, TransactionType type) {
     showModalBottomSheet(
       context: context,
@@ -162,7 +173,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: _screens[_selectedIndex],
+        child: _screens[_selectedIndex], // menampilkan halaman sesuai index yang dipilih
       ),
       bottomNavigationBar: PiggyBottomNavBar(
         currentIndex: _selectedIndex,

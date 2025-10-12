@@ -5,11 +5,14 @@ import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
 import 'login_screen.dart';
 
+// Halaman utama aplikasi
 class HomeScreen extends StatelessWidget {
+  // Data user yang login
   final UserData data;
 
   const HomeScreen({super.key, required this.data});
 
+  // Format angka menjadi format mata uang Rupiah
   String formatCurrency(double amount) {
     String amountStr = amount.toStringAsFixed(0);
     String result = '';
@@ -24,14 +27,17 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Mengambil instance TransactionProvider untuk mendapatkan data transaksi
     final provider = context.watch<TransactionProvider>();
 
+    // Jika data masih dimuat, tampilkan loading
     if (provider.loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final transactions = provider.items;
 
+    // Hitung total pemasukan, pengeluaran, dan saldo
     double totalIncome = 0;
     double totalExpense = 0;
 
@@ -52,7 +58,10 @@ class HomeScreen extends StatelessWidget {
           physics: const BouncingScrollPhysics(),
           child: Column(
             children: [
+              // Header
               _buildHeader(context),
+
+              // Saldo Utama
               Padding(
                 padding:
                 const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
@@ -62,6 +71,8 @@ class HomeScreen extends StatelessWidget {
                   totalExpense: totalExpense,
                 ),
               ),
+
+              // Daftar Transaksi Terbaru
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -75,6 +86,8 @@ class HomeScreen extends StatelessWidget {
                         color: AppColors.darkText,
                       ),
                     ),
+
+                    // List transaksi
                     const SizedBox(height: 10),
                     ...transactions.map((t) => _buildTransactionTile(t)).toList(),
                   ],
@@ -87,6 +100,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // Menampilkan profile, Welcome, dan tombol logout
   Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -128,6 +142,8 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
           ),
+
+          // Tombol Logout
           GestureDetector(
             onTap: () {
               Navigator.pushAndRemoveUntil(
@@ -152,6 +168,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // Menampilkan total saldo, income, dan expenses)
   Widget _buildSavingsCard({
     required double totalBalance,
     required double totalIncome,
@@ -176,6 +193,8 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
+
+          // Saldo Total
           const Text('Total Balance',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
@@ -183,6 +202,8 @@ class HomeScreen extends StatelessWidget {
               style:
               const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
+
+          // Kolom income & Expenses
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -222,6 +243,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // Widget untuk setiap transaksi di daftar transaksi
   Widget _buildTransactionTile(TransactionModel t) {
     final Map<String, dynamic> iconData = _getIconForCategory(t);
 
@@ -247,6 +269,8 @@ class HomeScreen extends StatelessWidget {
             child: Icon(iconData['icon'], color: iconData['color'], size: 24),
           ),
           const SizedBox(width: 15),
+
+          // Deskripsi Transaksi
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,6 +284,8 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
+
+          // Jumlah transaksi
           Text(
             (t.type == TransactionType.income ? '+ ' : '- ') +
                 formatCurrency(t.amount),
@@ -274,10 +300,12 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  // Menampilkan ikon transaksi berdasarkan kategori
   Map<String, dynamic> _getIconForCategory(TransactionModel t) {
     IconData icon;
     Color color;
 
+    // Jika transaksi berupa income
     if (t.type == TransactionType.income) {
       color = Colors.green;
       if (t.category.toLowerCase().contains('gaji')) {
@@ -287,6 +315,8 @@ class HomeScreen extends StatelessWidget {
       } else {
         icon = Icons.account_balance_wallet;
       }
+
+      // Jika transaksi berupa expense
     } else {
       color = Colors.redAccent;
       if (t.category.toLowerCase().contains('makan')) {

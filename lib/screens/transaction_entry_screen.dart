@@ -4,6 +4,7 @@ import '../app_colors.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
 
+// Daftar kategori pengeluaran
 final List<String> expenseCategories = [
   'Makanan & Minuman',
   'Transportasi',
@@ -12,6 +13,8 @@ final List<String> expenseCategories = [
   'Tagihan',
   'Lain-lain'
 ];
+
+// daftar kategori pemasukan
 final List<String> incomeCategories = [
   'Gaji',
   'Bonus',
@@ -20,6 +23,7 @@ final List<String> incomeCategories = [
   'Lain-lain'
 ];
 
+// Halaman input data transaksi
 class TransactionEntryScreen extends StatefulWidget {
   final TransactionType initialType;
 
@@ -41,14 +45,17 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
   void initState() {
     super.initState();
     _type = widget.initialType;
+    // Set kategori default berdasarkan tipe transaksi
     _selectedCategory = _type == TransactionType.income
         ? incomeCategories.first
         : expenseCategories.first;
   }
 
+  // Getter untuk kategori yang sesuai dengan tipe transaksi
   List<String> get currentCategories =>
       _type == TransactionType.income ? incomeCategories : expenseCategories;
 
+  // Fungsi untuk memilih tanggal
   Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
@@ -74,8 +81,10 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
     }
   }
 
+  // Menyimpan data transaksi ke dalam database
   void _saveTransaction() async {
     final amount = double.tryParse(_amountController.text);
+    // validasi data yang diinput
     if (amount == null || amount <= 0 || _descController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Jumlah atau Deskripsi tidak valid.')),
@@ -83,6 +92,7 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
       return;
     }
 
+    // Membuat objek transaksi baru
     final newTransaction = TransactionModel(
       description: _descController.text,
       amount: amount,
@@ -91,6 +101,7 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
       date: _selectedDate,
     );
 
+    // simpan data ke provider
     final provider = context.read<TransactionProvider>();
     await provider.addTransaction(newTransaction);
 
@@ -102,6 +113,7 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
       ),
     );
 
+    // Tutup halaman input data transaksi
     Navigator.of(context).pop();
   }
 
@@ -143,6 +155,7 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
           ),
           const SizedBox(height: 15),
 
+          // Input jumlah transaksi
           TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
@@ -157,6 +170,7 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
           ),
           const SizedBox(height: 15),
 
+          // Input deskripsi transaksi
           TextField(
             controller: _descController,
             decoration: InputDecoration(
@@ -169,6 +183,7 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
           ),
           const SizedBox(height: 15),
 
+          // Pilihan kategori transaksi
           Wrap(
             spacing: 8.0,
             children: currentCategories.map((category) {
@@ -195,6 +210,7 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
           ),
           const SizedBox(height: 15),
 
+          // Pilihan tanggal transaksi
           ListTile(
             title: Text(
                 'Tanggal: ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
@@ -207,6 +223,7 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
           ),
           const SizedBox(height: 20),
 
+          // Tombol simpan data
           ElevatedButton(
             onPressed: _saveTransaction,
             style: ElevatedButton.styleFrom(

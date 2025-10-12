@@ -25,7 +25,7 @@ class PiggyBottomNavBar extends StatelessWidget {
           BoxShadow(
             color: Colors.black12,
             blurRadius: 10,
-            offset: const Offset(0, -3),
+            offset: const Offset(0, -3), // backshadow ke arah atas
           ),
         ],
       ),
@@ -33,21 +33,23 @@ class PiggyBottomNavBar extends StatelessWidget {
         alignment: Alignment.center,
         clipBehavior: Clip.none,
         children: [
+          //Baris item navigasi (Home & Stats)
           Positioned.fill(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(1, Icons.home_outlined, Icons.home, 'Home'),
-                const SizedBox(width: 60),
+                const SizedBox(width: 60), // ruang kosong untuk tombol add transaction
                 _buildNavItem(2, Icons.bar_chart_outlined, Icons.bar_chart, 'Stats'),
               ],
             ),
           ),
 
+          // Tombol Add Transaction
           Positioned(
             bottom: 40,
             child: GestureDetector(
-              onTap: () => onTap(0),
+              onTap: () => onTap(0), // index 0 untuk tombol add transaction
               child: Container(
                 height: 70,
                 width: 70,
@@ -81,15 +83,15 @@ class PiggyBottomNavBar extends StatelessWidget {
 
   Widget _buildNavItem(
       int index, IconData inactiveIcon, IconData activeIcon, String label) {
-    final bool isActive = currentIndex == index;
+    final bool isActive = currentIndex == index; // cek apakah item aktif
 
     return GestureDetector(
-      onTap: () => onTap(index),
+      onTap: () => onTap(index), //memanggil fungsi saat ditekan
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            isActive ? activeIcon : inactiveIcon,
+            isActive ? activeIcon : inactiveIcon, // mengubah icon yang aktif
             color: isActive ? AppColors.darkGreen :  Colors.grey,
             size: 28,
           ),
