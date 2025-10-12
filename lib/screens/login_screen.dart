@@ -81,9 +81,7 @@ class _LoginRegisterScreenState extends State<LoginRegisterScreen>
     if (email == registeredUser!.email && password == registeredUser!.password) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => MainScreen(userData: registeredUser!), // ✅ kirim data user
-        ),
+        MaterialPageRoute(builder: (_) => MainScreen(userData: registeredUser!)),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

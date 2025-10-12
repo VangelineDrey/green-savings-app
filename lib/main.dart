@@ -5,10 +5,19 @@ import 'screens/home_screen.dart';
 import 'screens/transaction_entry_screen.dart';
 import 'screens/analysis_screen.dart';
 import 'widgets/bottom_nav_bar.dart';
-import 'screens/login_screen.dart'; // ✅ penting
+import 'screens/login_screen.dart';
+import 'package:provider/provider.dart';
+import 'providers/transaction_provider.dart';
 
 void main() {
-  runApp(const PiggyFlowApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TransactionProvider()),
+      ],
+      child: const PiggyFlowApp(),
+    ),
+  );
 }
 
 class PiggyFlowApp extends StatelessWidget {

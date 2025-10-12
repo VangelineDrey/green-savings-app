@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../app_colors.dart';
 
-// Dummy Data untuk Laporan, Grafik, dan Budget (Tidak Berubah)
+/// Dummy Data untuk Laporan, Grafik, dan Budget
 class DummyData {
   static final Map<String, double> monthlyExpensesByCategory = {
     'Makanan & Minuman': 2300000,
@@ -29,7 +29,6 @@ class DummyData {
 class AnalysisScreen extends StatelessWidget {
   const AnalysisScreen({Key? key}) : super(key: key);
 
-  // Fungsi helper untuk format mata uang (Tidak Berubah)
   String formatCurrency(double amount) {
     String amountStr = amount.toStringAsFixed(0);
     String result = '';
@@ -41,7 +40,7 @@ class AnalysisScreen extends StatelessWidget {
         result = '.' + result;
       }
     }
-    return 'Rp' + result;
+    return 'Rp$result';
   }
 
   @override
@@ -51,7 +50,7 @@ class AnalysisScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Analisis & Anggaran',
             style: TextStyle(
               fontSize: 30,
@@ -60,32 +59,28 @@ class AnalysisScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-
-          // Section 1: Budget (Anggaran - Fitur 4)
           _buildBudgetSection(context),
           const SizedBox(height: 30),
-
-          // Section 2: Grafik Aliran Dana Bulanan (Fitur 3)
           _buildMonthlyFlowChart(),
           const SizedBox(height: 30),
-
-          // Section 3: Grafik Pengeluaran per Kategori (Fitur 3 & 5)
           _buildCategoryExpenseChart(),
           const SizedBox(height: 30),
-
-          // Section 4: Laporan Keuangan (Fitur 5)
           _buildReportSection(context),
         ],
       ),
     );
   }
 
-  // --- WIDGET BUDGET (FITUR 4) ---
+  // --- BAGIAN 1: ANGGARAN ---
   Widget _buildBudgetSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Anggaran Bulan Ini', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.darkText)),
+        Text(
+          'Anggaran Bulan Ini',
+          style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.darkText),
+        ),
         const SizedBox(height: 10),
         ...DummyData.budgets.map((budget) {
           final double percentage = budget['spent'] / budget['limit'];
@@ -102,7 +97,7 @@ class AnalysisScreen extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(bottom: 15),
             child: Card(
-              color: AppColors.primaryPink.withOpacity(0.5), // Kembali ke Primary Pink
+              color: AppColors.primaryPink.withOpacity(0.5),
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
               child: Padding(
@@ -110,21 +105,29 @@ class AnalysisScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(budget['category'], style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkText)),
+                    Text(
+                      budget['category'],
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold, color: AppColors.darkText),
+                    ),
                     const SizedBox(height: 5),
-                    LinearProgressIndicator(
-                      value: percentage.clamp(0.0, 1.0),
-                      backgroundColor: Colors.white,
-                      valueColor: AlwaysStoppedAnimation<Color>(barColor),
-                      minHeight: 10,
+                    ClipRRect(
                       borderRadius: BorderRadius.circular(5),
+                      child: LinearProgressIndicator(
+                        value: percentage.clamp(0.0, 1.0),
+                        backgroundColor: Colors.white,
+                        valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                        minHeight: 10,
+                      ),
                     ),
                     const SizedBox(height: 5),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Terpakai: ${formatCurrency(budget['spent'])}', style: const TextStyle(fontSize: 12)),
-                        Text('Batas: ${formatCurrency(budget['limit'])}', style: const TextStyle(fontSize: 12)),
+                        Text('Terpakai: ${formatCurrency(budget['spent'])}',
+                            style: const TextStyle(fontSize: 12)),
+                        Text('Batas: ${formatCurrency(budget['limit'])}',
+                            style: const TextStyle(fontSize: 12)),
                       ],
                     ),
                   ],
@@ -137,59 +140,87 @@ class AnalysisScreen extends StatelessWidget {
           alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: () {},
-            child: const Text('Kelola Anggaran ➡️', style: TextStyle(color: AppColors.darkText)),
+            child: Text('Kelola Anggaran ➡️',
+                style: TextStyle(color: AppColors.darkText)),
           ),
         )
       ],
     );
   }
 
-  // --- WIDGET GRAFIK BULANAN (FITUR 3) ---
+  // --- BAGIAN 2: GRAFIK BAR ---
   Widget _buildMonthlyFlowChart() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Aliran Dana 4 Bulan Terakhir', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.darkText)),
+        Text(
+          'Aliran Dana 4 Bulan Terakhir',
+          style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.darkText),
+        ),
         const SizedBox(height: 10),
         Container(
           height: 250,
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.accentGreen.withOpacity(0.3), // Kembali ke Accent Green
+            color: AppColors.accentGreen.withOpacity(0.3),
             borderRadius: BorderRadius.circular(20),
           ),
           child: BarChart(
             BarChartData(
-              alignment: BarChartAlignment.spaceAround,
               maxY: 10000000,
-              barTouchData: BarTouchData(enabled: true),
+              gridData: FlGridData(show: false),
+              borderData: FlBorderData(show: false),
               titlesData: FlTitlesData(
                 show: true,
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      const titles = ['Okt', 'Nov', 'Des', 'Jan'];
+                    getTitlesWidget: (double value, TitleMeta meta) {
+                      final titles = ['Okt', 'Nov', 'Des', 'Jan'];
+                      final idx = value.toInt();
+
+                      if (idx < 0 || idx >= titles.length) return const SizedBox.shrink();
+
                       return SideTitleWidget(
-                        axisSide: meta.axisSide,
-                        space: 4,
-                        child: Text(titles[value.toInt()], style: const TextStyle(color: AppColors.darkText)),
+                        meta: meta, // ✅ Tambahkan ini!
+                        child: Text(
+                          titles[idx],
+                          style: TextStyle(
+                            color: AppColors.darkText,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       );
                     },
+                    reservedSize: 32,
                   ),
                 ),
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
+                    reservedSize: 48,
                     interval: 2000000,
-                    reservedSize: 40,
-                    getTitlesWidget: (value, meta) => Text('Rp${(value / 1000000).toInt()}J', style: const TextStyle(color: AppColors.darkText, fontSize: 10)),
+                    getTitlesWidget: (double value, TitleMeta meta) {
+                      final label = 'Rp${(value / 1000000).toInt()}J';
+                      return SideTitleWidget(
+                        meta: meta, // ✅ Tambahkan juga di sini
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            color: AppColors.darkText,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
-              borderData: FlBorderData(show: false),
               barGroups: DummyData.monthlyFlow.asMap().entries.map((entry) {
                 int index = entry.key;
                 Map<String, double> data = entry.value;
@@ -200,16 +231,17 @@ class AnalysisScreen extends StatelessWidget {
                     BarChartRodData(
                       toY: data['income']!,
                       color: AppColors.incomeGreen,
-                      width: 15,
-                      borderRadius: BorderRadius.circular(5),
+                      width: 14,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     BarChartRodData(
                       toY: data['expense']!,
                       color: AppColors.expenseRed,
-                      width: 15,
-                      borderRadius: BorderRadius.circular(5),
+                      width: 14,
+                      borderRadius: BorderRadius.circular(4),
                     ),
                   ],
+                  barsSpace: 4,
                 );
               }).toList(),
             ),
@@ -219,18 +251,17 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
-  // --- WIDGET PIE CHART (FITUR 3) ---
+  // --- BAGIAN 3: PIE CHART ---
   Widget _buildCategoryExpenseChart() {
-    final totalExpense = DummyData.monthlyExpensesByCategory.values.fold(0.0, (sum, item) => sum + item);
+    final totalExpense = DummyData.monthlyExpensesByCategory.values.fold(0.0, (a, b) => a + b);
     final categoryEntries = DummyData.monthlyExpensesByCategory.entries.toList();
 
     List<PieChartSectionData> showingSections() {
       int i = -1;
       return DummyData.monthlyExpensesByCategory.entries.map((entry) {
         i++;
-        final double value = entry.value;
-        const double radius = 50;
-        final double percentage = (value / totalExpense) * 100;
+        final value = entry.value;
+        final percentage = (value / totalExpense) * 100;
 
         return PieChartSectionData(
           color: [
@@ -242,8 +273,13 @@ class AnalysisScreen extends StatelessWidget {
           ][i % 5],
           value: value,
           title: '${percentage.toStringAsFixed(1)}%',
-          radius: radius,
-          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+          radius: 60,
+          titlePositionPercentageOffset: 0.6,
+          titleStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         );
       }).toList();
     }
@@ -251,13 +287,17 @@ class AnalysisScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Proporsi Pengeluaran per Kategori', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.darkText)),
+        Text(
+          'Proporsi Pengeluaran per Kategori',
+          style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.darkText),
+        ),
         const SizedBox(height: 10),
         Container(
           height: 300,
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.primaryPink.withOpacity(0.3), // Kembali ke Primary Pink
+            color: AppColors.primaryPink.withOpacity(0.3),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Row(
@@ -267,43 +307,39 @@ class AnalysisScreen extends StatelessWidget {
                 child: PieChart(
                   PieChartData(
                     sections: showingSections(),
-                    sectionsSpace: 2,
                     centerSpaceRadius: 40,
+                    sectionsSpace: 2,
                     startDegreeOffset: -90,
                   ),
                 ),
               ),
               Expanded(
                 flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    // Iterasi Legenda (sudah diperbaiki)
-                    children: categoryEntries.asMap().entries.map((entry) {
-                      int index = entry.key;
-                      MapEntry<String, double> item = entry.value;
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: categoryEntries.asMap().entries.map((entry) {
+                    int index = entry.key;
+                    MapEntry<String, double> item = entry.value;
 
-                      return Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            color: [
-                              Colors.red.shade300,
-                              Colors.blue.shade300,
-                              Colors.purple.shade300,
-                              Colors.orange.shade300,
-                              Colors.pink.shade300
-                            ][index % 5],
-                            margin: const EdgeInsets.only(right: 5),
-                          ),
-                          Text(item.key, style: const TextStyle(fontSize: 12)),
-                        ],
-                      );
-                    }).toList(),
-                  ),
+                    return Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          color: [
+                            Colors.red.shade300,
+                            Colors.blue.shade300,
+                            Colors.purple.shade300,
+                            Colors.orange.shade300,
+                            Colors.pink.shade300
+                          ][index % 5],
+                          margin: const EdgeInsets.only(right: 5),
+                        ),
+                        Text(item.key, style: const TextStyle(fontSize: 12)),
+                      ],
+                    );
+                  }).toList(),
                 ),
               ),
             ],
@@ -313,36 +349,40 @@ class AnalysisScreen extends StatelessWidget {
     );
   }
 
-  // --- WIDGET LAPORAN (FITUR 5) ---
+  // --- BAGIAN 4: LAPORAN ---
   Widget _buildReportSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Laporan Keuangan', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.darkText)),
+        Text(
+          'Laporan Keuangan',
+          style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.darkText),
+        ),
         const SizedBox(height: 10),
         ListTile(
-          leading: const Icon(Icons.picture_as_pdf, color: AppColors.expenseRed),
+          leading: Icon(Icons.picture_as_pdf, color: AppColors.expenseRed),
           title: const Text('Laporan Bulan Januari 2025 (PDF)'),
-          trailing: const Icon(Icons.download, color: AppColors.darkText),
+          trailing: Icon(Icons.download, color: AppColors.darkText),
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Simulasi: Membuat Laporan PDF...')),
             );
           },
-          tileColor: AppColors.primaryPink.withOpacity(0.3), // Kembali ke Primary Pink
+          tileColor: AppColors.primaryPink.withOpacity(0.3),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
         const SizedBox(height: 10),
         ListTile(
-          leading: const Icon(Icons.table_chart, color: AppColors.incomeGreen),
+          leading: Icon(Icons.table_chart, color: AppColors.incomeGreen),
           title: const Text('Ekspor Data Transaksi (CSV)'),
-          trailing: const Icon(Icons.download, color: AppColors.darkText),
+          trailing: Icon(Icons.download, color: AppColors.darkText),
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Simulasi: Mengekspor Data CSV...')),
             );
           },
-          tileColor: AppColors.primaryPink.withOpacity(0.3), // Kembali ke Primary Pink
+          tileColor: AppColors.primaryPink.withOpacity(0.3),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
       ],
