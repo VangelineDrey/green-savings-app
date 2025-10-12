@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'app_colors.dart';
 import 'models/transaction.dart';
+import 'models/budget.dart';
 import 'screens/home_screen.dart';
 import 'screens/transaction_entry_screen.dart';
 import 'screens/analysis_screen.dart';
-import 'widgets/bottom_nav_bar.dart';
 import 'screens/login_screen.dart';
-import 'package:provider/provider.dart';
+import 'widgets/bottom_nav_bar.dart';
 import 'providers/transaction_provider.dart';
+import 'providers/budget_provider.dart';
 
 void main() {
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
+        ChangeNotifierProvider(create: (_) => BudgetProvider()),
       ],
       child: const PiggyFlowApp(),
     ),
@@ -34,14 +38,22 @@ class PiggyFlowApp extends StatelessWidget {
         fontFamily: 'Montserrat',
         useMaterial3: true,
       ),
-      home: const LoginRegisterScreen(), // halaman awal login
+      // halaman awal login
+      home: const LoginRegisterScreen(),
+      routes: {
+        '/main': (context) {
+          // pastikan userData dikirim via Navigator.pushNamed(context, '/main', arguments: userData);
+          final userData =
+          ModalRoute.of(context)!.settings.arguments as UserData;
+          return MainScreen(userData: userData);
+        },
+      },
     );
   }
 }
 
-// ✅ Tambahkan agar bisa menerima data user dari login
 class MainScreen extends StatefulWidget {
-  final UserData userData; // ✅ ambil data user dari login
+  final UserData userData;
 
   const MainScreen({Key? key, required this.userData}) : super(key: key);
 
@@ -52,12 +64,13 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 1;
 
-  late final List<Widget> _screens; // pakai late karena butuh widget.userData
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
-    // ✅ kirim data user ke HomeScreen
+
+    // ✅ Sekarang AnalysisScreen bisa akses BudgetProvider & TransactionProvider
     _screens = [
       const Placeholder(),
       HomeScreen(data: widget.userData),
