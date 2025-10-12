@@ -33,8 +33,13 @@ Menggunakan SQLite yang disediakan oleh sqflite untuk menyimpan data transaksi d
 - main.dart : entry point dari aplikasi
 
 ## Cara menjalankan project
-flutter pub get
-flutter run
+- pilih device (disarankan langsung emulate ke handphone)
+Jalankan command berikut di cmd android studio/visual studio code
+- flutter pub get
+- flutter run
+
+Catatan:
+- Pastikan Flutter SDK yang terinstall sudah versi terbaru
 
 Dibuat oleh:
 - Evangeline Audrey Kartawhayudi (825230015)
