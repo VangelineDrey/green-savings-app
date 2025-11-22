@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1077579501668",
+    "project_id": "greensavings-7c61c",
+    "storage_bucket": "greensavings-7c61c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1077579501668:android:0647ee52fece36a7970f71",
+        "android_client_info": {
+          "package_name": "com.example.greensavings"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQIHNScHjgZUKuNg1uzfl14AdSv56O38I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

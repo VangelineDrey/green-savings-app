@@ -16,7 +16,18 @@ import 'providers/budget_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // Init Firebase
+
+  // Tangkap error inisialisasi Firebase agar tidak crash silent
+  try {
+    await Firebase.initializeApp();
+    debugPrint('Firebase initialized successfully');
+  } catch (e, st) {
+    // Cetak ke console agar terlihat pada flutter run -v
+    debugPrint('Firebase.initializeApp() failed: $e');
+    debugPrint('$st');
+    // Lanjutkan tanpa Firebase supaya UI masih muncul untuk debugging lokal.
+  }
+
   runApp(
     MultiProvider(
       providers: [
@@ -34,34 +45,61 @@ class LeafyFlowApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // fallback color jika AppColors.background ternyata gelap/hitam saat debugging
+    final Color bg = AppColors.background;
+
     return MaterialApp(
       title: 'Green Savings',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: AppColors.primaryPink,
-        scaffoldBackgroundColor: AppColors.background,
+        scaffoldBackgroundColor: bg,
         fontFamily: 'Montserrat',
         useMaterial3: true,
+        // Pastikan brightness sesuai (menghindari tema gelap otomatis)
+        brightness: Brightness.light,
       ),
-      // Menggunakan StreamBuilder untuk cek status login otomatis
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          // 1. Tampilkan loading saat cek status auth
+          // Loading state
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            // Pastikan indikator loading kontras terhadap background
+            return Scaffold(
+              backgroundColor: bg,
+              body: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
           }
 
-          // 2. Jika User sudah login (ada data User)
+          // Error state
+          if (snapshot.hasError) {
+            debugPrint('authStateChanges error: ${snapshot.error}');
+            return Scaffold(
+              backgroundColor: bg,
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Terjadi kesalahan autentikasi:\n${snapshot.error}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          // Jika User sudah login
           if (snapshot.hasData) {
             return MainScreen(user: snapshot.data!);
           }
 
-          // 3. Jika User belum login
+          // Jika belum login
           return const LoginRegisterScreen();
         },
       ),
-      // Routes '/main' dihapus karena navigasi sudah ditangani StreamBuilder
     );
   }
 }
@@ -86,22 +124,26 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
 
     // Load data dari SQLite saat MainScreen dibuat
-    // Menggunakan Future.microtask agar tidak error saat build belum selesai
     Future.microtask(() {
-      context.read<TransactionProvider>().loadAll();
-      context.read<BudgetProvider>().loadBudgets();
+      try {
+        context.read<TransactionProvider>().loadAll();
+        context.read<BudgetProvider>().loadBudgets();
+        debugPrint('Requested loadAll() and loadBudgets()');
+      } catch (e, st) {
+        debugPrint('Error loading providers: $e');
+        debugPrint('$st');
+      }
     });
 
-    //daftar halaman berdasarkan index
+    // daftar halaman berdasarkan index
     _screens = [
       const Placeholder(), // Index 0: Tombol Add
       HomeScreen(user: widget.user), // Index 1: Home
       const AnalysisScreen(), // Index 2: Analysis
-      const AIChatScreen(),   // Index 3: Halaman Chat AI
+      const AIChatScreen(), // Index 3: Halaman Chat AI
     ];
   }
 
-  // Menampilkan pilihan jenis transaksi yang akan dilakukan (pemasukan/pengeluaran)
   void _showTransactionChoice(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -124,7 +166,6 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              // mencatat pemasukan
               ListTile(
                 leading: const Icon(Icons.arrow_circle_up,
                     color: AppColors.incomeGreen, size: 30),
@@ -142,7 +183,6 @@ class _MainScreenState extends State<MainScreen> {
                 },
               ),
               const SizedBox(height: 10),
-              // mencatatan pengeluaran
               ListTile(
                 leading: const Icon(Icons.arrow_circle_down,
                     color: AppColors.expenseRed, size: 30),
@@ -166,7 +206,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // form input data transaksi
   void _showTransactionEntry(BuildContext context, TransactionType type) {
     showModalBottomSheet(
       context: context,
@@ -191,24 +230,23 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Jika Anda melihat layar hitam, coba ganti sementara menjadi Container(color: Colors.orange)
     return Scaffold(
       body: SafeArea(
-        child: _screens[_selectedIndex], // menampilkan halaman sesuai index yang dipilih
+        child: _screens[_selectedIndex],
       ),
-      // Tombol Floating AI di pojok kanan bawah
-      // Hanya muncul jika bukan sedang di halaman AI itu sendiri
-      floatingActionButton: _selectedIndex == 3 ? null : FloatingActionButton(
+      floatingActionButton: _selectedIndex == 3
+          ? null
+          : FloatingActionButton(
         onPressed: () {
           setState(() {
-            _selectedIndex = 3; // Pindah ke halaman AI Chat
+            _selectedIndex = 3;
           });
         },
         backgroundColor: AppColors.darkGreen,
         child: const Icon(Icons.psychology, color: Colors.white),
         tooltip: 'Tanya Leafy',
       ),
-
-      // Navigasi Bawah Custom
       bottomNavigationBar: LeafyBottomNavBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
