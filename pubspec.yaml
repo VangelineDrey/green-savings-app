@@ -38,6 +38,18 @@ dependencies:
   intl: ^0.18.1
   fl_chart: ^1.1.1
   flutter_launcher_icons: ^0.14.4
+  flutter_markdown: ^0.7.0
+
+  # Firebase
+  firebase_core: ^4.2.1
+  firebase_auth: ^6.1.2
+  cloud_firestore: ^6.1.0
+
+  # Google Gemini
+  http: ^1.6.0
+  google_generative_ai: ^0.4.7
+
+  cupertino_icons: ^1.0.8
 
 flutter_launcher_icons:
   android: "launcher_icon"
