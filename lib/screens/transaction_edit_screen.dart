@@ -74,7 +74,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
   void saveTransaction() {
     final provider = context.read<TransactionProvider>();
 
-    // Validasi input
     if (descriptionController.text.isEmpty ||
         amountController.text.isEmpty ||
         double.tryParse(amountController.text) == null) {
@@ -87,9 +86,7 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       return;
     }
 
-    // Buat objek transaksi baru dengan nilai yang diperbarui
-    final updated = TransactionModel(
-      id: widget.transaction.id,
+    final updated = widget.transaction.copyWith(
       description: descriptionController.text,
       amount: double.parse(amountController.text),
       category: selectedCategory,
@@ -97,7 +94,6 @@ class _EditTransactionScreenState extends State<EditTransactionScreen> {
       type: selectedType,
     );
 
-    // Update transaksi di database
     provider.updateTransaction(updated);
 
     // Snackbar data berhasil diupdate

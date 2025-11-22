@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../app_colors.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
@@ -84,7 +85,6 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
   // Menyimpan data transaksi ke dalam database
   void _saveTransaction() async {
     final amount = double.tryParse(_amountController.text);
-    // validasi data yang diinput
     if (amount == null || amount <= 0 || _descController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Jumlah atau Deskripsi tidak valid.')),
@@ -92,8 +92,10 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
       return;
     }
 
-    // Membuat objek transaksi baru
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     final newTransaction = TransactionModel(
+      userId: userId, // <- wajib diisi
       description: _descController.text,
       amount: amount,
       category: _selectedCategory,
@@ -101,7 +103,6 @@ class _TransactionEntryScreenState extends State<TransactionEntryScreen> {
       date: _selectedDate,
     );
 
-    // simpan data ke provider
     final provider = context.read<TransactionProvider>();
     await provider.addTransaction(newTransaction);
 

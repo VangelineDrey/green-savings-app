@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            await provider.fetchTransactions();
+            await provider.loadAll();
             await _refreshUserData();
           },
           child: SingleChildScrollView(
@@ -213,7 +213,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // LOGOUT BUTTON
           GestureDetector(
-            onTap: () async => await AuthService().logout(),
+            onTap: () async {
+              await AuthService().logout();
+            },
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
