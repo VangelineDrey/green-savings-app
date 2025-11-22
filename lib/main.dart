@@ -1,33 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'app_colors.dart';
-import 'models/transaction.dart';
-import 'models/budget.dart';
+import 'models/transaction.dart'; // Diperlukan untuk Enum TransactionType
 import 'screens/home_screen.dart';
 import 'screens/transaction_entry_screen.dart';
 import 'screens/analysis_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/ai_chat_screen.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/budget_provider.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); // Init Firebase
   runApp(
-    //MultiProvider untuk state management
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => BudgetProvider()),
       ],
-      child: const PiggyFlowApp(),
+      child: const LeafyFlowApp(),
     ),
   );
 }
 
 // Widget utama aplikasi
-class PiggyFlowApp extends StatelessWidget {
-  const PiggyFlowApp({Key? key}) : super(key: key);
+class LeafyFlowApp extends StatelessWidget {
+  const LeafyFlowApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -40,25 +43,34 @@ class PiggyFlowApp extends StatelessWidget {
         fontFamily: 'Montserrat',
         useMaterial3: true,
       ),
-      // halaman awal login
-      home: const LoginRegisterScreen(),
-      routes: {
-        '/main': (context) {
-          // Mengambil data user yang dikirim lewat Navigator.pushNamed
-          final userData =
-          ModalRoute.of(context)!.settings.arguments as UserData;
-          return MainScreen(userData: userData);
+      // Menggunakan StreamBuilder untuk cek status login otomatis
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // 1. Tampilkan loading saat cek status auth
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          }
+
+          // 2. Jika User sudah login (ada data User)
+          if (snapshot.hasData) {
+            return MainScreen(user: snapshot.data!);
+          }
+
+          // 3. Jika User belum login
+          return const LoginRegisterScreen();
         },
-      },
+      ),
+      // Routes '/main' dihapus karena navigasi sudah ditangani StreamBuilder
     );
   }
 }
 
 // Menampilkan homeScreen ketika sudah berhasil login
 class MainScreen extends StatefulWidget {
-  final UserData userData;
+  final User user;
 
-  const MainScreen({Key? key, required this.userData}) : super(key: key);
+  const MainScreen({Key? key, required this.user}) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -73,11 +85,19 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
 
+    // Load data dari SQLite saat MainScreen dibuat
+    // Menggunakan Future.microtask agar tidak error saat build belum selesai
+    Future.microtask(() {
+      context.read<TransactionProvider>().loadAll();
+      context.read<BudgetProvider>().loadBudgets();
+    });
+
     //daftar halaman berdasarkan index
-        _screens = [
-      const Placeholder(), // Tombol tengah untuk input data transaksi
-      HomeScreen(data: widget.userData),
-      const AnalysisScreen(), // halaman grafik & analisis
+    _screens = [
+      const Placeholder(), // Index 0: Tombol Add
+      HomeScreen(user: widget.user), // Index 1: Home
+      const AnalysisScreen(), // Index 2: Analysis
+      const AIChatScreen(),   // Index 3: Halaman Chat AI
     ];
   }
 
@@ -175,7 +195,21 @@ class _MainScreenState extends State<MainScreen> {
       body: SafeArea(
         child: _screens[_selectedIndex], // menampilkan halaman sesuai index yang dipilih
       ),
-      bottomNavigationBar: PiggyBottomNavBar(
+      // Tombol Floating AI di pojok kanan bawah
+      // Hanya muncul jika bukan sedang di halaman AI itu sendiri
+      floatingActionButton: _selectedIndex == 3 ? null : FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            _selectedIndex = 3; // Pindah ke halaman AI Chat
+          });
+        },
+        backgroundColor: AppColors.darkGreen,
+        child: const Icon(Icons.psychology, color: Colors.white),
+        tooltip: 'Tanya Leafy',
+      ),
+
+      // Navigasi Bawah Custom
+      bottomNavigationBar: LeafyBottomNavBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),

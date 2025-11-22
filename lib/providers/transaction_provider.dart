@@ -1,36 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../data/db_helper.dart';
 import '../models/transaction.dart';
 import 'dart:collection';
-
 
 // Provider untuk mengelola data transaksi dan komunikasi dengan database
 class TransactionProvider extends ChangeNotifier {
   final DbHelper _db = DbHelper(); // Inisialisasi helper database SQLite
   List<TransactionModel> _items = []; // List transaksi yang tersimpan
-  bool _loading = true; // Status loading untuk UI
+  bool _loading = false; // Status loading untuk UI
 
-  // Getter untuk akses data transaksi dan status loading
+  // Getter untuk akses data transaksi (read-only) dan status loading
   UnmodifiableListView<TransactionModel> get items => UnmodifiableListView(_items);
-  // Getter untuk status loading
   bool get loading => _loading;
+
+  // Ambil User ID dari Firebase Auth
+  String get _userId => FirebaseAuth.instance.currentUser?.uid ?? '';
 
   // Constructor: langsung load semua data saat provider dibuat
   TransactionProvider() {
     loadAll();
-    _items.sort((a, b) => b.date.compareTo(a.date));
   }
 
   // Fungsi untuk mengambil semua data transaksi dari database
   Future<void> loadAll() async {
-    print('🔄 [TransactionProvider] loadAll() start');
+    // Jika user belum login, kosongkan data
+    if (_userId.isEmpty) {
+      _items = [];
+      notifyListeners();
+      return;
+    }
+
+    print('🔄 [TransactionProvider] Loading data for UserID: $_userId');
     _loading = true;
     notifyListeners();
 
     try {
-      // Mengambil data dari SQLite
-      _items = await _db.getAllTransactions();
-      print('✅ [TransactionProvider] loaded ${_items.length} transactions');
+      // Ambil data HANYA milik user yang sedang login
+      _items = await _db.getTransactionsByUser(_userId);
+      // Sort transaksi terbaru di atas
+      _items.sort((a, b) => b.date.compareTo(a.date));
+      print('✅ [TransactionProvider] Loaded ${_items.length} transactions');
     } catch (e, st) {
       print('❌ [TransactionProvider] error in loadAll: $e');
       print(st);
@@ -44,32 +54,46 @@ class TransactionProvider extends ChangeNotifier {
 
   // Fungsi untuk menambahkan transaksi baru ke database
   Future<void> addTransaction(TransactionModel t) async {
-    final id = await _db.insertTransaction(t);
-    // Masukkan ke list dengan ID auto-increment
-    _items.add(t.copyWith(id: id));
-    notifyListeners();
-  }
-
-  // Update transaksi tertentu berdasarkan ID
-  Future<void> updateTransaction(TransactionModel updated) async {
-    // Update data ke SQLite
-    await _db.updateTransaction(updated);
-
-    // Update data di list
-    final index = _items.indexWhere((t) => t.id == updated.id);
-    if (index != -1) {
-      // Update data dengan data terbaru
-      _items[index] = updated;
+    try {
+      final id = await _db.insertTransaction(t); // Simpan ke SQLite
+      // Masukkan ke list dengan ID auto-increment
+      _items.add(t.copyWith(id: id));
+      // Sort ulang agar urutan tetap benar
+      _items.sort((a, b) => b.date.compareTo(a.date));
       notifyListeners();
+    } catch (e) {
+      print('❌ addTransaction error: $e');
+      rethrow;
     }
   }
 
-  // Hapus transaksi berdasarkan ID
+  // Fungsi untuk mengupdate transaksi yang sudah ada
+  Future<void> updateTransaction(TransactionModel updated) async {
+    try {
+      await _db.updateTransaction(updated);
+
+      final index = _items.indexWhere((t) => t.id == updated.id);
+      if (index != -1) {
+        _items[index] = updated;
+        // Sort ulang
+        _items.sort((a, b) => b.date.compareTo(a.date));
+        notifyListeners();
+      }
+    } catch (e) {
+      print('❌ updateTransaction error: $e');
+      rethrow;
+    }
+  }
+
+  // Fungsi untuk menghapus transaksi berdasarkan ID
   Future<void> deleteTransaction(int id) async {
-    // Hapus dari SQLite
-    await _db.deleteTransaction(id);
-    // Hapus dari list
-    _items.removeWhere((t) => t.id == id);
-    notifyListeners();
+    try {
+      await _db.deleteTransaction(id);
+      _items.removeWhere((t) => t.id == id);
+      notifyListeners();
+    } catch (e) {
+      print('❌ deleteTransaction error: $e');
+      rethrow;
+    }
   }
 }
