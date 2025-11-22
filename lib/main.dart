@@ -1,64 +1,114 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'app_colors.dart';
-import 'models/transaction.dart';
-import 'models/budget.dart';
+import 'models/transaction.dart'; // Diperlukan untuk Enum TransactionType
 import 'screens/home_screen.dart';
 import 'screens/transaction_entry_screen.dart';
 import 'screens/analysis_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/ai_chat_screen.dart';
 import 'widgets/bottom_nav_bar.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/budget_provider.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Tangkap error inisialisasi Firebase agar tidak crash silent
+  try {
+    await Firebase.initializeApp();
+    debugPrint('Firebase initialized successfully');
+  } catch (e, st) {
+    // Cetak ke console agar terlihat pada flutter run -v
+    debugPrint('Firebase.initializeApp() failed: $e');
+    debugPrint('$st');
+    // Lanjutkan tanpa Firebase supaya UI masih muncul untuk debugging lokal.
+  }
+
   runApp(
-    //MultiProvider untuk state management
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => BudgetProvider()),
       ],
-      child: const PiggyFlowApp(),
+      child: const LeafyFlowApp(),
     ),
   );
 }
 
 // Widget utama aplikasi
-class PiggyFlowApp extends StatelessWidget {
-  const PiggyFlowApp({Key? key}) : super(key: key);
+class LeafyFlowApp extends StatelessWidget {
+  const LeafyFlowApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // fallback color jika AppColors.background ternyata gelap/hitam saat debugging
+    final Color bg = AppColors.background;
+
     return MaterialApp(
       title: 'Green Savings',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: AppColors.primaryPink,
-        scaffoldBackgroundColor: AppColors.background,
+        scaffoldBackgroundColor: bg,
         fontFamily: 'Montserrat',
         useMaterial3: true,
+        // Pastikan brightness sesuai (menghindari tema gelap otomatis)
+        brightness: Brightness.light,
       ),
-      // halaman awal login
-      home: const LoginRegisterScreen(),
-      routes: {
-        '/main': (context) {
-          // Mengambil data user yang dikirim lewat Navigator.pushNamed
-          final userData =
-          ModalRoute.of(context)!.settings.arguments as UserData;
-          return MainScreen(userData: userData);
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          // Loading state
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // Pastikan indikator loading kontras terhadap background
+            return Scaffold(
+              backgroundColor: bg,
+              body: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          // Error state
+          if (snapshot.hasError) {
+            debugPrint('authStateChanges error: ${snapshot.error}');
+            return Scaffold(
+              backgroundColor: bg,
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    'Terjadi kesalahan autentikasi:\n${snapshot.error}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              ),
+            );
+          }
+
+          // Jika User sudah login
+          if (snapshot.hasData) {
+            return MainScreen(user: snapshot.data!);
+          }
+
+          // Jika belum login
+          return const LoginRegisterScreen();
         },
-      },
+      ),
     );
   }
 }
 
 // Menampilkan homeScreen ketika sudah berhasil login
 class MainScreen extends StatefulWidget {
-  final UserData userData;
+  final User user;
 
-  const MainScreen({Key? key, required this.userData}) : super(key: key);
+  const MainScreen({Key? key, required this.user}) : super(key: key);
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -73,15 +123,27 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
 
-    //daftar halaman berdasarkan index
-        _screens = [
-      const Placeholder(), // Tombol tengah untuk input data transaksi
-      HomeScreen(data: widget.userData),
-      const AnalysisScreen(), // halaman grafik & analisis
+    // Load data dari SQLite saat MainScreen dibuat
+    Future.microtask(() {
+      try {
+        context.read<TransactionProvider>().loadAll();
+        context.read<BudgetProvider>().loadBudgets();
+        debugPrint('Requested loadAll() and loadBudgets()');
+      } catch (e, st) {
+        debugPrint('Error loading providers: $e');
+        debugPrint('$st');
+      }
+    });
+
+    // daftar halaman berdasarkan index
+    _screens = [
+      const Placeholder(), // Index 0: Tombol Add
+      HomeScreen(user: widget.user), // Index 1: Home
+      const AnalysisScreen(), // Index 2: Analysis
+      const AIChatScreen(), // Index 3: Halaman Chat AI
     ];
   }
 
-  // Menampilkan pilihan jenis transaksi yang akan dilakukan (pemasukan/pengeluaran)
   void _showTransactionChoice(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -104,7 +166,6 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              // mencatat pemasukan
               ListTile(
                 leading: const Icon(Icons.arrow_circle_up,
                     color: AppColors.incomeGreen, size: 30),
@@ -122,7 +183,6 @@ class _MainScreenState extends State<MainScreen> {
                 },
               ),
               const SizedBox(height: 10),
-              // mencatatan pengeluaran
               ListTile(
                 leading: const Icon(Icons.arrow_circle_down,
                     color: AppColors.expenseRed, size: 30),
@@ -146,7 +206,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // form input data transaksi
   void _showTransactionEntry(BuildContext context, TransactionType type) {
     showModalBottomSheet(
       context: context,
@@ -171,11 +230,24 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Jika Anda melihat layar hitam, coba ganti sementara menjadi Container(color: Colors.orange)
     return Scaffold(
       body: SafeArea(
-        child: _screens[_selectedIndex], // menampilkan halaman sesuai index yang dipilih
+        child: _screens[_selectedIndex],
       ),
-      bottomNavigationBar: PiggyBottomNavBar(
+      floatingActionButton: _selectedIndex == 3
+          ? null
+          : FloatingActionButton(
+        onPressed: () {
+          setState(() {
+            _selectedIndex = 3;
+          });
+        },
+        backgroundColor: AppColors.darkGreen,
+        child: const Icon(Icons.psychology, color: Colors.white),
+        tooltip: 'Tanya Leafy',
+      ),
+      bottomNavigationBar: LeafyBottomNavBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
       ),

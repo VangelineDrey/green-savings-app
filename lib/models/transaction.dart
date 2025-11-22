@@ -3,32 +3,41 @@ enum TransactionType { income, expense }
 
 // Model data untuk transaksi keuangan
 class TransactionModel {
-  final int? id; // ID transaksi (nullable, karena bisa auto-increment)
+  final int? id; // ID transaksi (nullable, auto-increment)
+  final String userId; // Untuk membedakan data antar user
   final String description; // Deskripsi atau catatan transaksi
   final double amount; // Jumlah uang
   final String category; // Kategori transaksi (misal: Makanan, Gaji)
   final TransactionType type; // Tipe transaksi (income/expense)
   final DateTime date; // Tanggal transaksi
+  final String originalCurrency; // Mata uang awal
+  final double originalAmount;   // Nilai awal sebelum konversi
 
   // Constructor untuk membuat objek transaksi
   TransactionModel({
     this.id,
+    required this.userId,
     required this.description,
     required this.amount,
     required this.category,
     required this.type,
     required this.date,
-  });
+    this.originalCurrency = 'IDR',
+    double? originalAmount,
+  }) : this.originalAmount = originalAmount ?? amount; // Jika null, samakan dengan amount
 
   // Konversi objek transaksi ke Map (untuk disimpan ke database)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+      'userId': userId,
       'description': description,
       'amount': amount,
       'category': category,
       'type': type == TransactionType.income ? 1 : 0, // 1 = income, 0 = expense
-      'date': date.toIso8601String(), // Format untuk tanggal
+      'date': date.toIso8601String(),
+      'originalCurrency': originalCurrency,
+      'originalAmount': originalAmount,
     };
   }
 
@@ -36,6 +45,7 @@ class TransactionModel {
   factory TransactionModel.fromMap(Map<String, dynamic> m) {
     return TransactionModel(
       id: m['id'] as int?,
+      userId: m['userId'] ?? '',
       description: m['description'] as String,
       amount: (m['amount'] as num).toDouble(),
       category: m['category'] as String,
@@ -43,27 +53,34 @@ class TransactionModel {
           ? TransactionType.income
           : TransactionType.expense,
       date: DateTime.parse(m['date'] as String),
+      originalCurrency: m['originalCurrency'] ?? 'IDR',
+      originalAmount: (m['originalAmount'] as num?)?.toDouble() ??
+          (m['amount'] as num).toDouble(),
     );
   }
 
   // Fungsi untuk membuat salinan objek dengan perubahan yang diinginkan
-  // copyWith digunakan untuk mempermudah edit transaksi di edit screen
   TransactionModel copyWith({
     int? id,
+    String? userId,
     String? description,
     double? amount,
     String? category,
     TransactionType? type,
     DateTime? date,
+    String? originalCurrency,
+    double? originalAmount,
   }) {
     return TransactionModel(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       description: description ?? this.description,
       amount: amount ?? this.amount,
       category: category ?? this.category,
       type: type ?? this.type,
       date: date ?? this.date,
+      originalCurrency: originalCurrency ?? this.originalCurrency,
+      originalAmount: originalAmount ?? this.originalAmount,
     );
   }
-
 }
