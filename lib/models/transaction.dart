@@ -45,4 +45,25 @@ class TransactionModel {
       date: DateTime.parse(m['date'] as String),
     );
   }
+
+  // Fungsi untuk membuat salinan objek dengan perubahan yang diinginkan
+  // copyWith digunakan untuk mempermudah edit transaksi di edit screen
+  TransactionModel copyWith({
+    int? id,
+    String? description,
+    double? amount,
+    String? category,
+    TransactionType? type,
+    DateTime? date,
+  }) {
+    return TransactionModel(
+      id: id ?? this.id,
+      description: description ?? this.description,
+      amount: amount ?? this.amount,
+      category: category ?? this.category,
+      type: type ?? this.type,
+      date: date ?? this.date,
+    );
+  }
+
 }

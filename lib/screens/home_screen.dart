@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../app_colors.dart';
 import '../models/transaction.dart';
 import '../providers/transaction_provider.dart';
+import '../screens/transaction_edit_screen.dart';
+import '../widgets/transaction_card.dart';
 import 'login_screen.dart';
 
 // Halaman utama aplikasi
@@ -61,10 +64,12 @@ class HomeScreen extends StatelessWidget {
               // Header
               _buildHeader(context),
 
-              // Saldo Utama
+              // Menampilkan ringkasan total saldo, income, dan expense
               Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 25,
+                ),
                 child: _buildSavingsCard(
                   totalBalance: totalBalance,
                   totalIncome: totalIncome,
@@ -89,7 +94,56 @@ class HomeScreen extends StatelessWidget {
 
                     // List transaksi
                     const SizedBox(height: 10),
-                    ...transactions.map((t) => _buildTransactionTile(t)).toList(),
+                    ...transactions
+                        .map(
+                          (t) => GestureDetector(
+                            // long press delete
+                            onLongPress: () => _confirmDelete(context, t),
+                            child: Dismissible(
+                              key: ValueKey(t.id),
+                              // swipe kanan untuk edit
+                              direction: DismissDirection.startToEnd,
+                              background: Container(
+                                padding: const EdgeInsets.only(left: 20),
+                                alignment: Alignment.centerLeft,
+                                decoration: BoxDecoration(
+                                  color: Colors.blueAccent.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
+                              ),
+                              confirmDismiss: (direction) async {
+                                // menuju halaman edit saat di-swipe
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        EditTransactionScreen(transaction: t),
+                                  ),
+                                );
+                                return false; // tidak hapus item dari list
+                              },
+                              child: TransactionCard(
+                                transaction: t,
+                                onEdit: (transaction) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => EditTransactionScreen(
+                                        transaction: transaction,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ],
                 ),
               ),
@@ -131,6 +185,7 @@ class HomeScreen extends StatelessWidget {
                       fontWeight: FontWeight.w400,
                     ),
                   ),
+                  // Menampilkan nama user yang login
                   Text(
                     '${data.name}!',
                     style: const TextStyle(
@@ -149,8 +204,9 @@ class HomeScreen extends StatelessWidget {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const LoginRegisterScreen()),
-                    (Route<dynamic> route) => false,
+                  builder: (context) => const LoginRegisterScreen(),
+                ),
+                (Route<dynamic> route) => false,
               );
             },
             child: Container(
@@ -159,8 +215,11 @@ class HomeScreen extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.logout_rounded,
-                  color: Colors.grey, size: 28),
+              child: const Icon(
+                Icons.logout_rounded,
+                color: Colors.grey,
+                size: 28,
+              ),
             ),
           ),
         ],
@@ -193,22 +252,34 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-
           // Saldo Total
-          const Text('Total Balance',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          const Text(
+            'Total Balance',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
           const SizedBox(height: 8),
-          Text(formatCurrency(totalBalance),
-              style:
-              const TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
+          Text(
+            formatCurrency(totalBalance),
+            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 20),
 
           // Kolom income & Expenses
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildAmountRow('Income', totalIncome, Colors.green, Icons.arrow_downward),
-              _buildAmountRow('Expenses', totalExpense, Colors.redAccent, Icons.arrow_upward),
+              _buildAmountRow(
+                'Income',
+                totalIncome,
+                Colors.green,
+                Icons.arrow_downward,
+              ),
+              _buildAmountRow(
+                'Expenses',
+                totalExpense,
+                Colors.redAccent,
+                Icons.arrow_upward,
+              ),
             ],
           ),
         ],
@@ -216,7 +287,51 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAmountRow(String label, double amount, Color color, IconData icon) {
+  // Konfirmasi delete transaksi
+  void _confirmDelete(BuildContext context, TransactionModel t) {
+    final provider = context.read<TransactionProvider>();
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete Transaction"),
+        content: Text(
+          'Are you sure you want to delete "${t.description}"?',
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.deleteTransaction(t.id!);
+              Navigator.pop(context);
+
+              // Snackbar data berhasil dihapus
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Transaction deleted successfully!"),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget untuk menampilkan baris jumlah uang (Income/Expenses)
+  // // berisi ikon kategori, label, dan nilai uang dalam format Rupiah
+  Widget _buildAmountRow(
+    String label,
+    double amount,
+    Color color,
+    IconData icon,
+  ) {
     return Row(
       children: [
         Container(
@@ -229,10 +344,13 @@ class HomeScreen extends StatelessWidget {
           child: Icon(icon, color: color, size: 16),
         ),
         const SizedBox(width: 8),
+        // Kolom untuk label & nilai uang
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Label income/expenses
             Text(label, style: const TextStyle(fontSize: 12)),
+            // Nilai uang dalam format Rupiah
             Text(
               formatCurrency(amount),
               style: const TextStyle(fontWeight: FontWeight.bold),
@@ -275,12 +393,18 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(t.description,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600)),
+                Text(
+                  t.description,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(t.category,
-                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text(
+                  t.category,
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -290,8 +414,9 @@ class HomeScreen extends StatelessWidget {
             (t.type == TransactionType.income ? '+ ' : '- ') +
                 formatCurrency(t.amount),
             style: TextStyle(
-              color:
-              t.type == TransactionType.income ? Colors.green : Colors.red,
+              color: t.type == TransactionType.income
+                  ? Colors.green
+                  : Colors.red,
               fontWeight: FontWeight.bold,
             ),
           ),

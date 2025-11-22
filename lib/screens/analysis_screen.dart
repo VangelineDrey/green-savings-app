@@ -15,6 +15,16 @@ class AnalysisScreen extends StatefulWidget {
   State<AnalysisScreen> createState() => _AnalysisScreenState();
 }
 
+// Daftar kategori pengeluaran untuk dropdown anggaran
+const List<String> expenseCategories = [
+  'Makanan & Minuman',
+  'Transportasi',
+  'Belanja',
+  'Hiburan',
+  'Tagihan',
+  'Lain-lain',
+];
+
 class _AnalysisScreenState extends State<AnalysisScreen> {
   @override
   void initState() {
@@ -80,45 +90,52 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   void _showEditBudgetDialog(
       BuildContext context,
       BudgetProvider budgetProvider,
-      TransactionProvider transactionProvider,
-      ) {
-    // Menampilkan kategori transaksi & kategori yang sudah ada di anggaran
-    final transactionCategories = transactionProvider.items
-        .where((t) => t.type == TransactionType.expense)
-        .map((t) => t.category)
-        .toSet();
+      TransactionProvider transactionProvider, {
+        Budget? existingBudget, // null = tambah, tidak null = edit
+      }) {
+    // Controller untuk input jumlah anggaran
+    final controller = TextEditingController(
+      text: existingBudget?.limitAmount.toStringAsFixed(0) ?? '',
+    );
 
-    final budgetCategories =
-    budgetProvider.budgets.map((b) => b.category).toSet();
-    final allCategories = {...transactionCategories, ...budgetCategories}.toList();
+    // Default kategori dropdown
+    String selectedCategory = existingBudget?.category ??
+        (expenseCategories.isNotEmpty ? expenseCategories.first : '');
 
-    // Default kategori & controller input nilai anggaran
-    String selectedCategory =
-    allCategories.isNotEmpty ? allCategories.first : '';
-    final controller = TextEditingController();
+    // Bentuk format bulan saat ini (contoh: 2025-11)
+    final now = DateTime.now();
+    final currentMonth =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}';
 
-    // input anggaran
     showDialog(
       context: context,
       builder: (ctx) {
         return StatefulBuilder(builder: (ctx, setState) {
           return AlertDialog(
-            title: const Text('Atur Anggaran Bulanan'),
+            title: Text(existingBudget == null
+                ? 'Tambah Anggaran'
+                : 'Edit Anggaran'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (allCategories.isNotEmpty)
-                  DropdownButton<String>(
-                    isExpanded: true,
-                    value: selectedCategory,
-                    onChanged: (val) {
-                      if (val != null) setState(() => selectedCategory = val);
-                    },
-                    items: allCategories
-                        .map((cat) =>
-                        DropdownMenuItem(value: cat, child: Text(cat)))
-                        .toList(),
-                  ),
+                // Dropdown pilih kategori
+                DropdownButtonFormField<String>(
+                  value: selectedCategory,
+                  decoration: const InputDecoration(labelText: 'Kategori'),
+                  items: expenseCategories
+                      .map((cat) => DropdownMenuItem(
+                    value: cat,
+                    child: Text(cat),
+                  ))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) setState(() => selectedCategory = value);
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
+                // Input batas anggaran
                 TextField(
                   controller: controller,
                   keyboardType: TextInputType.number,
@@ -128,57 +145,62 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
               ],
             ),
+
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(ctx),
                   child: const Text('Batal')),
+              // Tombol untuk simpan anggaran
               ElevatedButton(
                 onPressed: () async {
-                  final text = controller.text
+                  // Hilangkan titik pemisah ribuan sebelum parse
+                  final raw = controller.text
                       .replaceAll('.', '')
                       .replaceAll(',', '');
-                  final value = double.tryParse(text);
+                  final value = double.tryParse(raw);
 
-                  if (value != null && selectedCategory.isNotEmpty) {
-                    // Simpan anggaran berdasarkan bulan saat ini
-                    final now = DateTime.now();
-                    final currentMonth =
-                        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+                  if (value == null) return;
 
-                    // Cek apakah sudah ada anggaran kategori tersebut di bulan ini
-                    final existing = budgetProvider.budgets.firstWhere(
-                          (b) =>
-                      b.category == selectedCategory &&
-                          b.month == currentMonth,
-                      orElse: () => Budget(
-                        id: null,
+                  if (existingBudget == null) {
+                    // Menambah anggaran baru
+                    await budgetProvider.addBudget(
+                      Budget(
                         category: selectedCategory,
                         limitAmount: value,
                         month: currentMonth,
                       ),
                     );
 
-                    // Jika belum ada data, add new
-                    if (existing.id == null) {
-                      await budgetProvider.addBudget(
-                        Budget(
-                          category: selectedCategory,
-                          limitAmount: value,
-                          month: currentMonth,
-                        ),
-                      );
-                    } else {
-                      // Jika sudah ada data, update data
-                      final updated = Budget(
-                        id: existing.id,
+                    Navigator.pop(ctx);
+
+                    // Snackbar ketika data berhasil ditambahkan
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Anggaran berhasil ditambahkan'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    // Mengupdate anggaran yang sudah ada
+                    await transactionProvider.loadAll();
+                    await budgetProvider.updateBudget(
+                      Budget(
+                        id: existingBudget.id,
                         category: selectedCategory,
                         limitAmount: value,
                         month: currentMonth,
-                      );
-                      await budgetProvider.updateBudget(updated);
-                    }
+                      ),
+                    );
 
                     Navigator.pop(ctx);
+
+                    // Snackbar ketika data berhasil di-update
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Anggaran berhasil diperbarui'),
+                        backgroundColor: Colors.blue,
+                      ),
+                    );
                   }
                 },
                 child: const Text('Simpan'),
@@ -234,7 +256,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
           ),
           const SizedBox(height: 10),
 
-          // Jikka belum ada anggaran
+          // Jika belum ada anggaran, akan menampilkan pesan
           if (budgets.isEmpty)
             Padding(
               padding: const EdgeInsets.all(16),
@@ -244,74 +266,151 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               ),
             )
           else
-            // Tampilkan setiap anggaran dalam bentuk kartu
-            ...budgets.map((b) {
-              final spent = expensesByCategory[b.category] ?? 0.0;
-              final percentage =
-              b.limitAmount > 0 ? (spent / b.limitAmount) : 0.0;
+            // Menampilkan anggaran dalam bentuk list
+            Column(
+              children: [
+                ...budgets.map((b) {
+                  // meghitung total pengeluaran per kategori
+                  final spent = expensesByCategory[b.category] ?? 0.0;
+                  final percentage = b.limitAmount > 0 ? (spent / b.limitAmount) : 0.0;
 
-              // Warna Progress Bar
-              Color barColor;
-              if (percentage < 0.5) {
-                barColor = AppColors.incomeGreen;
-              } else if (percentage < 0.85) {
-                barColor = Colors.orange;
-              } else {
-                barColor = AppColors.expenseRed;
-              }
+                  // Menentukan warna dari progress bar
+                  Color barColor;
+                  // Jika masih dibawah 0,5 warna = Hijau
+                  if (percentage < 0.5) {
+                    barColor = AppColors.incomeGreen;
+                    // Jika masih dibawah 0,85 warna = Orange
+                  } else if (percentage < 0.85) {
+                    barColor = Colors.orange;
+                    // Jika selain itu = Merah
+                  } else {
+                    barColor = AppColors.expenseRed;
+                  }
 
-              // Tampilkan kartu untuk setiap anggaran
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 15),
-                child: Card(
-                  color: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15)),
-                  elevation: 2,
-                  child: Padding(
-                    padding: const EdgeInsets.all(15),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          b.category,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 15),
+                    child: Dismissible(
+                      key: Key('budget-${b.id}'), // unique key wajib supaya bisa dihapus
+                      direction: DismissDirection.endToStart, // swipe ke kiri untuk hapus
+
+                      // Menampilkan background merah ketika di-swipe
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Icon(Icons.delete, color: Colors.white),
+                      ),
+
+                      // Pesan konfirmasi saat menghapus
+                      confirmDismiss: (direction) async {
+                        return await showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text("Hapus Anggaran?"),
+                            content: Text(
+                                "Apakah kamu yakin ingin menghapus anggaran kategori '${b.category}'?"),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text("Batal"),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                child: const Text(
+                                  "Hapus",
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+
+                      // Menghapus data ketika swipe disetujui
+                      onDismissed: (_) async {
+                        await budgetProvider.deleteBudget(b.id!);
+
+                        // Snackbar setelah data berhasil dihapus
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Anggaran '${b.category}' berhasil dihapus"),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      },
+
+                      // Widget utama untuk setiap anggaran (ketika longpress akan menampilkan edit)
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(15),
+                        onLongPress: () {
+                          _showEditBudgetDialog(
+                            context,
+                            budgetProvider,
+                            transactionProvider,
+                            existingBudget: b, // Mengirim data anggaran yang akan di-edit
+                          );
+                        },
+                        child: Card(
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          elevation: 2,
+                          child: Padding(
+                            padding: const EdgeInsets.all(15),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Nama kategori
+                                Text(
+                                  b.category,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                // ProgressBar untuk persentase pengeluaran
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(5),
+                                  child: LinearProgressIndicator(
+                                    value: percentage.clamp(0.0, 1.0),
+                                    backgroundColor: Colors.grey[200],
+                                    valueColor: AlwaysStoppedAnimation(barColor),
+                                    minHeight: 10,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+
+                                // Menampilkan total pengeluaran dan batas anggaran
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Terpakai: ${formatCurrency(spent)}',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    Text(
+                                      'Batas: ${formatCurrency(b.limitAmount)}',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        // Progress Bar anggaran
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(5),
-                          child: LinearProgressIndicator(
-                            value: percentage.clamp(0.0, 1.0),
-                            backgroundColor: Colors.grey[200],
-                            valueColor: AlwaysStoppedAnimation(barColor),
-                            minHeight: 10,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Terpakai: ${formatCurrency(spent)}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            Text(
-                              'Batas: ${formatCurrency(b.limitAmount)}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(),
+                  );
+                }).toList(),
+              ],
+            ),
 
+          // Tombol untuk menambah anggaran
           const SizedBox(height: 10),
           Center(
             child: ElevatedButton(
